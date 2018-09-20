@@ -256,13 +256,18 @@ public final class ConfigurationPropertyName
 		int i1 = 0;
 		int i2 = 0;
 		while (i1 < l1 || i2 < l2) {
-			ElementType type1 = n1.elements.getType(i1);
-			ElementType type2 = n2.elements.getType(i2);
-			String e1 = (i1 < l1) ? n1.getElement(i1++, Form.UNIFORM) : null;
-			String e2 = (i2 < l2) ? n2.getElement(i2++, Form.UNIFORM) : null;
-			int result = compare(e1, type1, e2, type2);
-			if (result != 0) {
-				return result;
+			try {
+				ElementType type1 = (i1 < l1) ? n1.elements.getType(i1) : null;
+				ElementType type2 = (i2 < l2) ? n2.elements.getType(i2) : null;
+				String e1 = (i1 < l1) ? n1.getElement(i1++, Form.UNIFORM) : null;
+				String e2 = (i2 < l2) ? n2.getElement(i2++, Form.UNIFORM) : null;
+				int result = compare(e1, type1, e2, type2);
+				if (result != 0) {
+					return result;
+				}
+			}
+			catch (ArrayIndexOutOfBoundsException ex) {
+				throw new RuntimeException(ex);
 			}
 		}
 		return 0;
