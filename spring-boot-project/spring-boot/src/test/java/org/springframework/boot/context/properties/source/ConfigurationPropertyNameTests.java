@@ -234,10 +234,10 @@ public class ConfigurationPropertyNameTests {
 	}
 
 	@Test
-	public void adaptWhenElementValueProcessorIsNullShouldThrowException() {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("ElementValueProcessor must not be null");
-		ConfigurationPropertyName.adapt("foo", '.', null);
+	public void adaptWhenElementValueProcessorIsNullShouldAdapt() {
+		ConfigurationPropertyName name = ConfigurationPropertyName.adapt("foo", '.',
+				null);
+		assertThat(name.toString()).isEqualTo("foo");
 	}
 
 	@Test
@@ -543,6 +543,12 @@ public class ConfigurationPropertyNameTests {
 		ConfigurationPropertyName name = ConfigurationPropertyName.adapt("fOO.b_-a-r",
 				'.');
 		assertThat(name.toString()).isEqualTo("foo.b-a-r");
+	}
+
+	@Test
+	public void toStringFromOfShouldBeLowerCaseDashed() {
+		ConfigurationPropertyName name = ConfigurationPropertyName.of("foo.bar-baz");
+		assertThat(name.toString()).isEqualTo("foo.bar-baz");
 	}
 
 	@Test
