@@ -129,7 +129,7 @@ public final class ConfigurationPropertyName
 			return element.toString();
 		}
 		if (form == Form.ORIGINAL) {
-			if (type != ElementType.NON_VALID) {
+			if (type != ElementType.NON_UNIFORM) {
 				return element.toString();
 			}
 			return convertToOriginalForm(element).toString();
@@ -431,7 +431,7 @@ public final class ConfigurationPropertyName
 		}
 		Elements elements = new ElementsParser(name, '.').parse();
 		for (int i = 0; i < elements.getSize(); i++) {
-			if (elements.getType(i) == ElementType.NON_VALID) {
+			if (elements.getType(i) == ElementType.NON_UNIFORM) {
 				if (returnNullIfInvalid) {
 					return null;
 				}
@@ -485,6 +485,9 @@ public final class ConfigurationPropertyName
 		}
 		Elements elements = new ElementsParser(name, separator)
 				.parse(elementValueProcessor);
+		if (elements.getSize() == 0) {
+			return EMPTY;
+		}
 		return new ConfigurationPropertyName(elements);
 	}
 
@@ -717,7 +720,7 @@ public final class ConfigurationPropertyName
 			int length = this.source.length();
 			int openBracketCount = 0;
 			int start = 0;
-			ElementType type = ElementType.UNIFORM;
+			ElementType type = ElementType.EMPTY;
 			for (int i = 0; i < length; i++) {
 				char ch = this.source.charAt(i);
 				if (ch == '[') {
@@ -733,43 +736,52 @@ public final class ConfigurationPropertyName
 					if (openBracketCount == 0) {
 						add(start, i, type, valueProcessor);
 						start = i + 1;
-						type = ElementType.UNIFORM;
+						type = ElementType.EMPTY;
 					}
 				}
 				else if (!type.isIndexed() && ch == this.separator) {
 					add(start, i, type, valueProcessor);
 					start = i + 1;
-					type = ElementType.UNIFORM;
+					type = ElementType.EMPTY;
 				}
 				else {
-					type = updateType(type, ch, i);
+					type = updateType(type, ch, i - start);
 				}
 			}
 			if (openBracketCount != 0) {
-				type = ElementType.NON_VALID;
+				type = ElementType.NON_UNIFORM;
 			}
 			add(start, length, type, valueProcessor);
 			return new Elements(this.source, this.size, this.start, this.end, this.type,
 					this.resolved);
 		}
 
-		private ElementType updateType(ElementType existingType, char ch, int i) {
-			if (existingType == ElementType.NUMERICALLY_INDEXED && !isNumeric(ch)) {
-				return ElementType.INDEXED;
+		private ElementType updateType(ElementType existingType, char ch, int index) {
+			if (existingType.isIndexed()) {
+				if (existingType == ElementType.NUMERICALLY_INDEXED && !isNumeric(ch)) {
+					return ElementType.INDEXED;
+				}
+				return existingType;
 			}
-			if ((existingType == ElementType.UNIFORM
-					|| existingType == ElementType.DASHED) && !isValidChar(ch, i)) {
-				return ElementType.NON_VALID;
+			if (existingType == ElementType.EMPTY && isValidChar(ch, index)) {
+				return (index == 0) ? ElementType.UNIFORM : ElementType.NON_UNIFORM;
 			}
 			if (existingType == ElementType.UNIFORM && ch == '-') {
-				existingType = ElementType.DASHED;
+				return ElementType.DASHED;
+			}
+			if (!isValidChar(ch, index)) {
+				if (existingType == ElementType.EMPTY
+						&& !isValidChar(Character.toLowerCase(ch), index)) {
+					return ElementType.EMPTY;
+				}
+				return ElementType.NON_UNIFORM;
 			}
 			return existingType;
 		}
 
 		private void add(int start, int end, ElementType type,
 				Function<CharSequence, CharSequence> valueProcessor) {
-			if ((end - start) < 1) {
+			if ((end - start) < 1 || type == ElementType.EMPTY) {
 				return;
 			}
 			if (this.start.length <= end) {
@@ -841,6 +853,11 @@ public final class ConfigurationPropertyName
 	private enum ElementType {
 
 		/**
+		 * The element is logically empty (contains no valid chars).
+		 */
+		EMPTY(false),
+
+		/**
 		 * The element is a uniform name (a-z, 0-9, no dashes, lowercase).
 		 */
 		UNIFORM(false),
@@ -852,6 +869,11 @@ public final class ConfigurationPropertyName
 		DASHED(false),
 
 		/**
+		 * The element contains non uniform characters and will need to be converted.
+		 */
+		NON_UNIFORM(false),
+
+		/**
 		 * The element is non-numerically indexed.
 		 */
 		INDEXED(true),
@@ -859,12 +881,7 @@ public final class ConfigurationPropertyName
 		/**
 		 * The element is numerically indexed.
 		 */
-		NUMERICALLY_INDEXED(true),
-
-		/**
-		 * The element that contains at least on non-valid char.
-		 */
-		NON_VALID(false);
+		NUMERICALLY_INDEXED(true);
 
 		private final boolean indexed;
 

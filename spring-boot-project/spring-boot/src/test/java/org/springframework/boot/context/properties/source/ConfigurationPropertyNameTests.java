@@ -305,6 +305,12 @@ public class ConfigurationPropertyNameTests {
 	}
 
 	@Test
+	public void adaptUnderscoreShouldReturnEmpty() {
+		assertThat(ConfigurationPropertyName.adapt("_", '_').isEmpty()).isTrue();
+		assertThat(ConfigurationPropertyName.adapt("_", '.').isEmpty()).isTrue();
+	}
+
+	@Test
 	public void isEmptyWhenEmptyShouldReturnTrue() {
 		assertThat(ConfigurationPropertyName.of("").isEmpty()).isTrue();
 	}
