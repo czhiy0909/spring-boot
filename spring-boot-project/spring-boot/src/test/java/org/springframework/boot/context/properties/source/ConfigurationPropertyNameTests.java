@@ -545,6 +545,15 @@ public class ConfigurationPropertyNameTests {
 	}
 
 	@Test
+	public void compare() {
+		ConfigurationPropertyName name = ConfigurationPropertyName
+				.of("spring.resources.chain.strategy.content");
+		ConfigurationPropertyName other = ConfigurationPropertyName
+				.of("spring.resources.chain.strategy.content.enabled");
+		name.compareTo(other);
+	}
+
+	@Test
 	public void toStringShouldBeLowerCaseDashed() {
 		ConfigurationPropertyName name = ConfigurationPropertyName.adapt("fOO.b_-a-r",
 				'.');
